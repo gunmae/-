@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Prime Global Trader</title>
+<script src="https://s3.tradingview.com/tv.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    :root {
+        /* Deep Ocean Theme Palette */
+        --bg-color: #0f172a;
+        --card-bg: #1e293b;
+        --text-main: #f1f5f9;
+        --text-sub: #94a3b8;
+        --accent-gold: #fbbf24;
+        --accent-teal: #2dd4bf;
+        --accent-red: #f43f5e;
+        --border-radius: 16px;
+        --shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        margin: 0; padding: 0; background: var(--bg-color); color: var(--text-main);
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+        overflow-x: hidden;
+    }
+
+    /* === Header === */
+    header {
+        position: sticky; top: 0; z-index: 100;
+        background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
+        padding: 15px 20px; border-bottom: 1px solid #334155;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .logo { font-size: 1.2rem; font-weight: 800; color: var(--accent-gold); display: flex; align-items: center; gap: 8px; }
+    
+    .lang-btn {
+        background: rgba(255,255,255,0.1); border: 1px solid #334155;
+        color: var(--accent-teal); padding: 6px 12px; border-radius: 20px;
+        font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: 0.3s;
+    }
+    .lang-btn:hover { background: var(--accent-teal); color: #0f172a; }
+
+    /* === Navigation === */
+    .nav-tabs {
+        display: flex; gap: 10px; padding: 15px 20px; overflow-x: auto;
+        background: var(--bg-color); scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+        padding: 10px 20px; border-radius: 30px; border: 1px solid #334155;
+        background: transparent; color: var(--text-sub); font-size: 0.95rem; font-weight: 600;
+        cursor: pointer; white-space: nowrap; transition: 0.3s;
+    }
+    .tab-btn.active {
+        background: var(--accent-teal); color: #0f172a; border-color: var(--accent-teal);
+        box-shadow: 0 0 15px rgba(45, 212, 191, 0.2);
+    }
+
+    /* === Content Layout === */
+    .container { padding: 10px 20px; max-width: 1000px; margin: 0 auto; min-height: 80vh; }
+    .content-section { display: none; animation: fadeUp 0.4s ease; }
+    .content-section.active { display: block; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* === Search Bar === */
+    .search-box { position: relative; margin-bottom: 25px; }
+    .search-input {
+        width: 100%; padding: 16px 20px 16px 50px; border-radius: 50px; border: 1px solid #334155;
+        background: var(--card-bg); color: #fff; font-size: 1rem; outline: none;
+        box-shadow: var(--shadow); transition: 0.3s;
+    }
+    .search-input:focus { border-color: var(--accent-teal); }
+    .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-sub); }
+
+    /* === Lists & Cards === */
+    .card { background: var(--card-bg); border-radius: var(--border-radius); padding: 5px 0; margin-bottom: 20px; border: 1px solid #334155; overflow: hidden; }
+    .list-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 15px 20px; border-bottom: 1px solid #334155; cursor: pointer; transition: 0.2s;
+    }
+    .list-item:hover { background: rgba(255,255,255,0.05); }
+    .list-item:last-child { border-bottom: none; }
+    .item-main { font-weight: 700; color: #fff; font-size: 1.05rem; }
+    .item-sub { font-size: 0.85rem; color: var(--text-sub); margin-top: 4px; }
+    
+    .widget-box { background: var(--card-bg); border-radius: var(--border-radius); overflow: hidden; border: 1px solid #334155; margin-bottom: 20px; min-height: 400px; }
+
+    /* === Detail Modal === */
+    .detail-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--bg-color); z-index: 200; display: none; flex-direction: column; overflow-y: auto;
+    }
+    .detail-overlay.active { display: flex; }
+    .detail-header {
+        padding: 15px 20px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+        display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155;
+        position: sticky; top: 0; z-index: 210;
+    }
+    .back-btn { background: none; border: none; color: #fff; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .detail-content { padding: 20px; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    /* PnL & Buttons */
+    .pnl-box { background: rgba(45, 212, 191, 0.1); border: 1px solid var(--accent-teal); padding: 15px; border-radius: var(--border-radius); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .pnl-input { background: transparent; border: none; border-bottom: 1px solid var(--text-sub); color: #fff; font-size: 1.1rem; width: 100px; text-align: right; outline: none;}
+    
+    .ai-btn {
+        width: 100%; padding: 18px; background: linear-gradient(135deg, var(--accent-gold), #d97706);
+        color: #0f172a; font-weight: 800; border: none; border-radius: var(--border-radius);
+        cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+        box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3); font-size: 1.05rem; margin-top: 10px;
+    }
+
+    /* AI Modal */
+    .ai-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+    .ai-card { background: #1e293b; width: 85%; max-width: 380px; padding: 30px; border-radius: 25px; border: 1px solid var(--accent-gold); text-align: center; }
+    .score-circle { width: 110px; height: 110px; border-radius: 50%; border: 6px solid var(--accent-gold); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; color: var(--accent-gold); }
+    
+    .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="logo"><i class="fas fa-globe"></i> PRIME TRADER</div>
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <div style="text-align: right; font-size: 0.8rem;">
+            <span style="color:var(--text-sub)">USD/KRW</span><br>
+            <span id="ex-rate" style="color:var(--accent-teal); font-weight:bold;">1,450</span>
+        </div>
+        <button class="lang-btn" onclick="toggleLanguage()" id="btn-lang">ENG</button>
+    </div>
+</header>
+
+<nav class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('crypto')" data-tr="tab_crypto">암호화폐</button>
+    <button class="tab-btn" onclick="switchTab('us')" data-tr="tab_us">미국주식</button>
+    <button class="tab-btn" onclick="switchTab('korea')" data-tr="tab_korea">한국주식</button>
+    <button class="tab-btn" onclick="switchTab('global')" data-tr="tab_global">해외주식</button>
+    <button class="tab-btn" onclick="switchTab('news')" data-tr="tab_news">뉴스</button>
+</nav>
+
+<div class="container">
+    <div id="tab-crypto" class="content-section active">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="search-crypto" placeholder="코인명/심볼 검색 (BTC, 리플...)" onkeypress="handleSearch(event, 'crypto')">
+        </div>
+        <div class="card" id="list-crypto"></div>
+    </div>
+
+    <div id="tab-us" class="content-section">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="search-us" placeholder="티커/종목명 (Apple, NVDA...)" onkeypress="handleSearch(event, 'us')">
+        </div>
+        <div class="card" id="list-us"></div>
+        <div class="widget-box" style="height: 500px;">
+            <div class="tradingview-widget-container">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js" async>
+                { "exchanges": [], "dataSource": "SPX500", "grouping": "sector", "blockSize": "market_cap_basic", "blockColor": "change", "locale": "kr", "symbolUrl": "", "colorTheme": "dark", "hasTopBar": false, "isTransparent": true, "width": "100%", "height": "100%" }
+                </script>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-korea" class="content-section">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="search-korea" placeholder="종목명/코드 (삼성전자, 005930...)" onkeypress="handleSearch(event, 'korea')">
+        </div>
+        <div class="card" id="list-korea"></div>
+    </div>
+
+    <div id="tab-global" class="content-section">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="search-global" placeholder="티커/이름 (Toyota, 600519...)" onkeypress="handleSearch(event, 'global')">
+        </div>
+        <div class="card" id="list-global"></div>
+        <div class="widget-box" style="height: 400px;">
+            <div class="tradingview-widget-container">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
+                { "colorTheme": "dark", "dateRange": "12M", "showChart": true, "locale": "kr", "largeChartUrl": "", "isTransparent": true, "showSymbolLogo": true, "width": "100%", "height": "100%", "tabs": [ { "title": "Asia Indices", "symbols": [ { "s": "TVC:NI225" }, { "s": "TVC:SHCOMP" }, { "s": "HSI:HSI" } ] } ] }
+                </script>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-news" class="content-section">
+        <div class="widget-box" style="height: 800px;">
+            <div class="tradingview-widget-container">
+                <div class="tradingview-widget-container__widget"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
+                { "feedMode": "all_symbols", "colorTheme": "dark", "isTransparent": true, "displayMode": "regular", "width": "100%", "height": "100%", "locale": "kr" }
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="detail-page" class="detail-overlay">
+    <div class="detail-header">
+        <button class="back-btn" onclick="closeDetail()">
+            <i class="fas fa-arrow-left"></i> <span data-tr="back">돌아가기</span>
+        </button>
+        <div style="text-align: right;">
+            <div id="dt-symbol" style="color:var(--accent-gold); font-weight:bold;">SYMBOL</div>
+            <div id="dt-market" style="font-size:0.8rem; color:var(--text-sub);">MARKET</div>
+        </div>
+    </div>
+    <div class="detail-content">
+        <div class="pnl-box">
+            <div>
+                <i class="fas fa-calculator" style="color:var(--accent-teal)"></i> 
+                <span data-tr="avg_price">내 평단가</span> (<span id="cur-sym">$</span>):
+                <input type="number" id="avg-input" class="pnl-input" placeholder="0.00" oninput="calcPnL()">
+            </div>
+            <div id="pnl-res" style="font-weight:bold;"></div>
+        </div>
+
+        <div class="detail-grid">
+            <div><div class="widget-box" id="chart-area" style="height: 500px;"></div></div>
+            <div>
+                <div class="widget-box" style="height: 250px;">
+                    <h4 style="padding:10px 15px; margin:0; border-bottom:1px solid #334155;" data-tr="tech_title">전문가 분석</h4>
+                    <div id="tech-area" style="height:100%"></div>
+                </div>
+                <div class="widget-box" style="height: 300px;">
+                    <h4 style="padding:10px 15px; margin:0; border-bottom:1px solid #334155;" data-tr="news_title">관련 뉴스</h4>
+                    <div id="news-area" style="height:100%"></div>
+                </div>
+                <button class="ai-btn" onclick="openAI()">
+                    <i class="fas fa-robot"></i> <span data-tr="ai_btn">AI 매수 추천 점수 분석</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="ai-modal" class="ai-modal" onclick="if(event.target==this)this.style.display='none'">
+    <div class="ai-card">
+        <h3 style="color:var(--accent-gold)" data-tr="ai_title">AI 투자 점수</h3>
+        <div id="ai-loading" style="margin: 30px 0;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size:2rem; color:var(--accent-teal)"></i>
+            <p style="margin-top:15px; font-size:0.9rem;" data-tr="ai_loading">데이터 통합 분석 중...</p>
+        </div>
+        <div id="ai-result" class="hidden">
+            <div class="score-circle" id="score-val">--</div>
+            <h2 id="score-grade" style="margin:0;">BUY</h2>
+            <p style="font-size:0.85rem; color:#94a3b8; margin-top:15px;" id="ai-msg">...</p>
+            <div style="font-size:0.7rem; color:#475569; margin-top:20px; line-height:1.4;" data-tr="disclaimer">
+                * 본 결과는 시뮬레이션이며 투자에 대한 책임은 지지 않습니다.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === 데이터베이스 (검색용) ===
+    // k: 한국어 이름, e: 영어 이름, s: 심볼, id: 트레이딩뷰 ID
+    const stockDB = [
+        // Crypto
+        { type:'crypto', s:'BTC', k:'비트코인', e:'Bitcoin', id:'BINANCE:BTCUSDT' },
+        { type:'crypto', s:'ETH', k:'이더리움', e:'Ethereum', id:'BINANCE:ETHUSDT' },
+        { type:'crypto', s:'XRP', k:'리플', e:'Ripple', id:'BINANCE:XRPUSDT' },
+        { type:'crypto', s:'DOGE', k:'도지코인', e:'Dogecoin', id:'BINANCE:DOGEUSDT' },
+        { type:'crypto', s:'SOL', k:'솔라나', e:'Solana', id:'BINANCE:SOLUSDT' },
+        // US
+        { type:'us', s:'AAPL', k:'애플', e:'Apple', id:'NASDAQ:AAPL' },
+        { type:'us', s:'TSLA', k:'테슬라', e:'Tesla', id:'NASDAQ:TSLA' },
+        { type:'us', s:'NVDA', k:'엔비디아', e:'NVIDIA', id:'NASDAQ:NVDA' },
+        { type:'us', s:'MSFT', k:'마이크로소프트', e:'Microsoft', id:'NASDAQ:MSFT' },
+        { type:'us', s:'TQQQ', k:'티큐큐큐', e:'ProShares UltraPro QQQ', id:'NASDAQ:TQQQ' },
+        { type:'us', s:'AMD', k:'에이엠디', e:'AMD', id:'NASDAQ:AMD' },
+        // Korea
+        { type:'korea', s:'005930', k:'삼성전자', e:'Samsung Electronics', id:'KRX:005930' },
+        { type:'korea', s:'000660', k:'SK하이닉스', e:'SK Hynix', id:'KRX:000660' },
+        { type:'korea', s:'373220', k:'LG에너지솔루션', e:'LG Energy Solution', id:'KRX:373220' },
+        { type:'korea', s:'005380', k:'현대차', e:'Hyundai Motor', id:'KRX:005380' },
+        { type:'korea', s:'035420', k:'NAVER', e:'NAVER', id:'KRX:035420' },
+        // Global
+        { type:'global', s:'7203', k:'도요타', e:'Toyota Motor', id:'TSE:7203' },
+        { type:'global', s:'6758', k:'소니', e:'Sony Group', id:'TSE:6758' },
+        { type:'global', s:'600519', k:'귀주모태주', e:'Kweichow Moutai', id:'SSE:600519' },
+        { type:'global', s:'TSMC', k:'TSMC', e:'TSMC', id:'NYSE:TSM' }
+    ];
+
+    // === 언어 팩 ===
+    const translations = {
+        ko: {
+            tab_crypto: "암호화폐", tab_us: "미국주식", tab_korea: "한국주식", tab_global: "해외주식", tab_news: "뉴스",
+            ph_crypto: "코인명/심볼 검색 (BTC, 리플...)", ph_us: "티커/종목명 (Apple, NVDA...)", 
+            ph_korea: "종목명/코드 (삼성전자, 005930...)", ph_global: "티커/이름 (Toyota, 600519...)",
+            back: "돌아가기", avg_price: "내 평단가", tech_title: "전문가 분석", news_title: "관련 뉴스",
+            ai_btn: "AI 매수 추천 점수 분석", ai_title: "AI 투자 점수", ai_loading: "재무제표, 수급, 매크로 통합 분석 중...",
+            disclaimer: "* 본 결과는 시뮬레이션이며 투자에 대한 책임은 지지 않습니다.",
+            ai_buy_strong: "강력 매수", ai_buy: "매수", ai_hold: "보류",
+            ai_desc_strong: "기관 수급과 모멘텀이 완벽합니다. 적극 진입 추천.",
+            ai_desc_buy: "상승 여력이 충분합니다. 분할 매수로 접근하세요.",
+            ai_desc_hold: "방향성이 모호합니다. 관망이 필요합니다."
+        },
+        en: {
+            tab_crypto: "Crypto", tab_us: "US Stocks", tab_korea: "Korea Stocks", tab_global: "Global", tab_news: "News",
+            ph_crypto: "Search Symbol/Name (BTC, Ripple...)", ph_us: "Ticker/Name (Apple, NVDA...)", 
+            ph_korea: "Name/Code (Samsung, 005930...)", ph_global: "Ticker/Name (Toyota, 600519...)",
+            back: "Back", avg_price: "Avg Price", tech_title: "Technical Analysis", news_title: "Related News",
+            ai_btn: "Get AI Score Analysis", ai_title: "AI Investment Score", ai_loading: "Analyzing Financials, Volume, Macro...",
+            disclaimer: "* Simulation only. We are not responsible for investments.",
+            ai_buy_strong: "STRONG BUY", ai_buy: "BUY", ai_hold: "HOLD",
+            ai_desc_strong: "Perfect momentum & volume. Strong entry signal.",
+            ai_desc_buy: "Good upside potential. Accumulate slowly.",
+            ai_desc_hold: "Direction unclear. Wait and watch."
+        }
+    };
+
+    let curLang = 'ko'; // 'ko' or 'en'
+    let curState = { symbol: '', currency: '$' };
+
+    // === 초기화 ===
+    window.onload = () => {
+        // 환율 가져오기
+        fetch('https://api.exchangerate-api.com/v4/latest/USD')
+            .then(r=>r.json()).then(d=>{ document.getElementById('ex-rate').innerText = Math.floor(d.rates.KRW).toLocaleString(); });
+        
+        renderDefaultLists();
+        updateLanguageUI();
+    };
+
+    function renderDefaultLists() {
+        ['crypto', 'us', 'korea', 'global'].forEach(type => {
+            const list = stockDB.filter(i => i.type === type);
+            renderList(`list-${type}`, list);
+        });
+    }
+
+    function renderList(elId, data) {
+        document.getElementById(elId).innerHTML = data.map(item => `
+            <div class="list-item" onclick="openDetail('${item.id}', '${item.e}', '${item.k}', '${item.type}')">
+                <div>
+                    <div class="item-main">${curLang==='ko' ? item.k : item.e} <span style="font-size:0.8rem; color:#94a3b8;">${item.s}</span></div>
+                    <div class="item-sub">${item.id}</div>
+                </div>
+                <div style="color:var(--accent-teal);"><i class="fas fa-chevron-right"></i></div>
+            </div>
+        `).join('');
+    }
+
+    // === 검색 로직 (한글/영어/티커 통합) ===
+    window.handleSearch = (e, type) => {
+        if(e.key !== 'Enter') return;
+        const val = e.target.value.toLowerCase().trim();
+        if(!val) { renderDefaultLists(); return; }
+
+        // DB에서 검색 (심볼, 영어이름, 한글이름 포함 여부)
+        const filtered = stockDB.filter(i => 
+            i.type === type && (
+                i.s.toLowerCase().includes(val) || 
+                i.e.toLowerCase().includes(val) || 
+                i.k.includes(val)
+            )
+        );
+
+        if(filtered.length > 0) {
+            renderList(`list-${type}`, filtered);
+        } else {
+            // 결과가 없으면 사용자가 입력한 티커로 직접 시도하게끔 유도 (Fallback)
+            // 티커 형식으로 간주하고 강제 생성
+            let fallbackId = val.toUpperCase();
+            if(type === 'crypto') fallbackId = `BINANCE:${fallbackId}USDT`;
+            else if(type === 'us') fallbackId = `NASDAQ:${fallbackId}`;
+            else if(type === 'korea') fallbackId = `KRX:${fallbackId}`;
+            
+            const fallbackItem = [{ s: val.toUpperCase(), k: val, e: val, id: fallbackId, type: type }];
+            renderList(`list-${type}`, fallbackItem);
+        }
+    };
+
+    // === 언어 변경 ===
+    window.toggleLanguage = () => {
+        curLang = curLang === 'ko' ? 'en' : 'ko';
+        document.getElementById('btn-lang').innerText = curLang === 'ko' ? 'ENG' : '한글';
+        updateLanguageUI();
+        renderDefaultLists(); // 리스트 이름 업데이트
+    };
+
+    function updateLanguageUI() {
+        const t = translations[curLang];
+        
+        // 텍스트 교체 (data-tr 속성 가진 요소)
+        document.querySelectorAll('[data-tr]').forEach(el => {
+            const key = el.getAttribute('data-tr');
+            if(t[key]) el.innerText = t[key];
+        });
+
+        // Placeholder 교체
+        document.getElementById('search-crypto').placeholder = t.ph_crypto;
+        document.getElementById('search-us').placeholder = t.ph_us;
+        document.getElementById('search-korea').placeholder = t.ph_korea;
+        document.getElementById('search-global').placeholder = t.ph_global;
+    }
+
+    // === 상세 페이지 ===
+    window.openDetail = (id, nameEn, nameKo, type) => {
+        curState.symbol = id;
+        curState.currency = type === 'korea' ? '₩' : '$';
+        
+        const displayName = curLang === 'ko' ? nameKo : nameEn;
+        document.getElementById('dt-symbol').innerText = displayName;
+        document.getElementById('dt-market').innerText = id;
+        document.getElementById('cur-sym').innerText = curState.currency;
+        document.getElementById('avg-input').value = '';
+        document.getElementById('pnl-res').innerText = '';
+        
+        document.getElementById('detail-page').classList.add('active');
+
+        // 위젯 로드
+        loadWidget("chart-area", { "symbol": id, "interval": "D", "theme": "dark", "locale": curLang });
+        loadScriptWidget("tech-area", { "symbol": id, "interval": "1D", "colorTheme": "dark", "isTransparent": true, "locale": curLang });
+        loadScriptWidget("news-area", { "symbol": id, "colorTheme": "dark", "isTransparent": true, "displayMode": "compact", "locale": curLang });
+    };
+
+    function loadWidget(id, config) {
+        new TradingView.widget(Object.assign({ "container_id": id, "width": "100%", "height": "100%", "autosize": true }, config));
+    }
+    
+    function loadScriptWidget(id, config) {
+        const c = document.getElementById(id); c.innerHTML = '';
+        const s = document.createElement('script');
+        s.src = id.includes('tech') ? "https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js" : "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
+        s.async = true; s.innerHTML = JSON.stringify(Object.assign({ "width": "100%", "height": "100%" }, config));
+        c.appendChild(s);
+    }
+
+    window.closeDetail = () => {
+        document.getElementById('detail-page').classList.remove('active');
+        document.getElementById('chart-area').innerHTML = ''; 
+    };
+
+    // === 탭 전환 ===
+    window.switchTab = (tab) => {
+        document.querySelectorAll('.content-section').forEach(e => e.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(e => e.classList.remove('active'));
+        event.target.classList.add('active');
+    };
+
+    // === PnL 계산 (API 미연동 단순 표시) ===
+    window.calcPnL = () => {
+        const val = document.getElementById('avg-input').value;
+        if(val) document.getElementById('pnl-res').innerHTML = `<span style="font-size:0.8rem; color:#94a3b8;">* 실시간 가격 API 연동 필요</span>`;
+        else document.getElementById('pnl-res').innerHTML = '';
+    };
+
+    // === AI 시뮬레이션 ===
+    window.openAI = () => {
+        const modal = document.getElementById('ai-modal');
+        const load = document.getElementById('ai-loading');
+        const res = document.getElementById('ai-result');
+        const t = translations[curLang];
+
+        modal.style.display = 'flex'; load.style.display = 'block'; res.classList.add('hidden');
+
+        setTimeout(() => {
+            load.style.display = 'none'; res.classList.remove('hidden');
+            
+            const score = Math.floor(Math.random() * (99 - 60) + 60);
+            const circle = document.getElementById('score-val');
+            const grade = document.getElementById('score-grade');
+            const msg = document.getElementById('ai-msg');
+            
+            circle.innerText = score;
+            if(score >= 85) {
+                circle.style.borderColor = '#f43f5e'; circle.style.color = '#f43f5e';
+                grade.innerText = t.ai_buy_strong; grade.style.color = '#f43f5e';
+                msg.innerText = t.ai_desc_strong;
+            } else if (score >= 70) {
+                circle.style.borderColor = '#fbbf24'; circle.style.color = '#fbbf24';
+                grade.innerText = t.ai_buy; grade.style.color = '#fbbf24';
+                msg.innerText = t.ai_desc_buy;
+            } else {
+                circle.style.borderColor = '#3b82f6'; circle.style.color = '#3b82f6';
+                grade.innerText = t.ai_hold; grade.style.color = '#3b82f6';
+                msg.innerText = t.ai_desc_hold;
+            }
+        }, 2500);
+    };
+</script>
+</body>
+</html>
